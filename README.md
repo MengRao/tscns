@@ -55,3 +55,6 @@ uint64_t tsc = tn.rdtsc();
 // in logging task
 uint64_t ns = tn.tsc2ns(tsc);
 ```
+
+## Test
+`test.cc` shows your system's tsc_ghz, TSCNS's latency, clock_gettime's latency, and if TSCNS is synced with clock_gettime. Try run it.
