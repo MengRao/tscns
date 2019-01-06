@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
   }
   if (argc > 2) {
     int cpu = stoi(argv[2]);
-    if (!cpupin(cpu, 0)) exit(1);
+    if (!cpupin(cpu)) exit(1);
     cout << "bind to cpu: " << cpu << " success" << endl;
   }
   tn.init(tsc_ghz);
