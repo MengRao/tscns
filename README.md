@@ -1,2 +1,21 @@
-# tsctime
-A low overhead high precision nanosecond timestamp generator for Linux based on x86 TSC
+## What's wrong with clock_gettime/gettimeofday?
+Although Current Linux systems are using VDSO for implementing clock_gettime/gettimeofday, it still has a nonnegligible overhead(usually more than 100 ns), and the latency is quite unstable(usually between 20 ~ 1000 ns) among different invocations in different frequency, and also users have observed discrepant latency among different cpu cores under certain system configuration(e.g. isolcpus). Run `test.cc` to see how `clock_gettime` behaves on your machine.
+
+All of these are not good for recording nanosecond timestamps in time-critical tasks where latency of getting timestamp itself should be minimized, nor for benchmarking a general program where stable latency is expected.
+
+## How is TSCNS better?
+AS TSCNS uses rdtsc instruction and simple arithmatic operations to get the same nanosecond timestamp provided by clock_gettime, it's much faster and stable in terms of latency: around 10 ns! Actually the whole work is in just 8 assembly instructions without a function call on current X86-64 architecture.
+
+Also precision can be assured by careful calibration which we'll talk about later.
+
+## How does TSCNS calibrate time?
+The most important factor in TSCNS is **tsc frequency** on the system, which it uses to convert tsc to ns. Linux kernel also maintains the same varable named `int tsc_khz` in `arch/x86/kernel/tsc.c`, which can be explored by `dmesg | grep "tsc: Refined TSC clocksource calibration"`. Can we just read the frequency in dmesg and use it? No, because it's not accurate, as you can see, kernel measures the frequency in unit of 1000, and you can only get a number with 7 digits precision, if you use it, your ns timestamp will drift apart from system time. But if kernel maintains tsc frequency in khz, how could your timestamp drift with the same hz? Because kernel uses integer multiplication and shift operation to simulate a floating point multiplication(because kernel is prohibited from using floating point), which would result in slightly computational error, in turn resulting in more floating point digits after the 7, which we couldn't see. 
+
+That said, TSCNS needs to find a way to find out those invisible digits: it calibrates. Like kernel calibrating its tsc clocksource with the help of hpet, TSCNS calibrates its user space tsc with kernel tsc, it records two pairs of timestamps in different times to calcuate the slope, but in a much more accurate manner(If kernel is not accurate, user has to accept it; If TSCNS is not accurate, user can find it out!). 
+
+So initially TSCNS's user need to wait some time before calling `calibrate()` which returns the resultant tsc ghz in a double, and user can simply feed this freqency to TSCNS for future use without waiting. The long time user waits in the first run, the more accurate frequency calibration gets, and the returned tsc requency could be saved in a config file on the machine, because it remains valid until user upgrades hardware or kernel, when user should calibrate again.
+
+## Any limiations?
+Yes, firstly the CPU must have `constant_tsc` feature, which can searched in `/proc/cpuinfo`.
+
+Secondly TSCNS doesn't support NTP or other kind of system time changes after it's been initialized.
