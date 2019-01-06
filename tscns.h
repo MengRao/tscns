@@ -63,7 +63,8 @@ public:
   }
 
 private:
-  // Kernel sync time by finding the first
+  // Linux kernel sync time by finding the first try with tsc diff < 50000
+  // We do better: we find the try with the mininum tsc diff
   void syncTime(uint64_t& tsc, uint64_t& ns) {
     const int N = 10;
     uint64_t tscs[N + 1];
