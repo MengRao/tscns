@@ -15,7 +15,43 @@ That said, TSCNS needs to find a way to find out those invisible digits: it cali
 
 So initially TSCNS's user need to wait some time before calling `calibrate()` which returns the resultant tsc ghz in a double, and user can simply feed this freqency to TSCNS for future use without waiting. The long time user waits in the first run, the more accurate frequency calibration gets, and the returned tsc requency could be saved in a config file on the machine, because it remains valid until user upgrades hardware or kernel, when user should calibrate again.
 
-## Any limiations?
+## Any limitations?
 Yes.
 1) The CPU must have `constant_tsc` feature, which can searched in `/proc/cpuinfo`.
 2) TSCNS doesn't support NTP or other kinds of system time change after it's been initialized.
+
+## Usage
+Initialization if tsc_ghz is unknown or not saved previously:
+```C++
+TSCNS tn;
+
+tn.init();
+// sleep for some time or do other initialization work...
+std::this_thread::sleep_for(std::chrono::seconds(1));
+double tsc_ghz = tn.calibrate();
+// now we can save tsc_ghz for future initialization
+
+```
+
+Initialization if tsc_ghz is known:
+```C++
+TSCNS tn;
+
+tn.init(tsc_ghz);
+```
+
+Getting nanosecond timestamp in one step:
+```C++
+uint64_t ns = tn.rdns();
+```
+
+Or just recording a tsc in time-critical tasks and converting it to ns in tasks which can be delayed:
+```C++
+// in time-critical task
+uint64_t tsc = tn.rdtsc();
+
+...
+
+// in logging task
+uint64_t ns = tn.tsc2ns(tsc);
+```
