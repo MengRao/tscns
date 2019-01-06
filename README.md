@@ -16,6 +16,6 @@ That said, TSCNS needs to find a way to find out those invisible digits: it cali
 So initially TSCNS's user need to wait some time before calling `calibrate()` which returns the resultant tsc ghz in a double, and user can simply feed this freqency to TSCNS for future use without waiting. The long time user waits in the first run, the more accurate frequency calibration gets, and the returned tsc requency could be saved in a config file on the machine, because it remains valid until user upgrades hardware or kernel, when user should calibrate again.
 
 ## Any limiations?
-Yes, firstly the CPU must have `constant_tsc` feature, which can searched in `/proc/cpuinfo`.
-
-Secondly TSCNS doesn't support NTP or other kind of system time changes after it's been initialized.
+Yes.
+1) The CPU must have `constant_tsc` feature, which can searched in `/proc/cpuinfo`.
+2) TSCNS doesn't support NTP or other kinds of system time change after it's been initialized.
