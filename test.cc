@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
   }
   tn.init(tsc_ghz);
   if (tsc_ghz <= 0.0) {
-    int wait_sec = 10;
+    int wait_sec = 10; // set a longer time(e.g. more than 1 min) to get more precise tsc_ghz
     cout << "waiting " << wait_sec << " secs for calibration" << endl;
     std::this_thread::sleep_for(std::chrono::seconds(wait_sec));
     double tsc_ghz = tn.calibrate();

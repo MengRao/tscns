@@ -29,8 +29,8 @@ class TSCNS
 {
 public:
   // If you haven't calibrated tsc_ghz on this machine, set tsc_ghz as 0.0 and wait some time for calibration.
-  // The wait time should be at least 1 second and the longer the more accurate for calibration.
-  // We suggest that user waits as long as possible(e.g. for hours of sleep) once, and save the resultant tsc_ghz
+  // The wait time should be at least 1 second and the longer the more precise tsc_ghz calibrate can get.
+  // We suggest that user waits as long as possible(more than 1 min) once, and save the resultant tsc_ghz
   // returned from calibrate() somewhere(e.g. config file) on this machine for future use.
   //
   // If you have calibrated before on this machine as above, set tsc_ghz and skip calibration.
@@ -56,6 +56,8 @@ public:
 
   uint64_t rdns() { return tsc2ns(rdtsc()); }
 
+  // If you want cross-platform, use std::chrono as below which incurs one more function call:
+  // return std::chrono::high_resolution_clock::now().time_since_epoch().count();
   uint64_t rdsysns() {
     timespec ts;
     ::clock_gettime(CLOCK_REALTIME, &ts);
@@ -76,8 +78,8 @@ private:
       tscs[i] = rdtsc();
     }
 
-    int best = N;
-    for (int i = N - 1; i > 0; i--) {
+    int best = 1;
+    for (int i = 2; i <= N; i++) {
       if (tscs[i] - tscs[i - 1] < tscs[best] - tscs[best - 1]) best = i;
     }
     tsc = (tscs[best] + tscs[best - 1]) >> 1;
