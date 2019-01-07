@@ -50,15 +50,15 @@ public:
   }
 
   // You can change to using rdtscp if ordering is important
-  uint64_t rdtsc() { return __builtin_ia32_rdtsc(); }
+  uint64_t rdtsc() const { return __builtin_ia32_rdtsc(); }
 
-  uint64_t tsc2ns(uint64_t tsc) { return ns_offset + (int64_t)((int64_t)tsc * tsc_ghz_inv); }
+  uint64_t tsc2ns(uint64_t tsc) const { return ns_offset + (int64_t)((int64_t)tsc * tsc_ghz_inv); }
 
-  uint64_t rdns() { return tsc2ns(rdtsc()); }
+  uint64_t rdns() const { return tsc2ns(rdtsc()); }
 
   // If you want cross-platform, use std::chrono as below which incurs one more function call:
   // return std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  uint64_t rdsysns() {
+  uint64_t rdsysns() const {
     timespec ts;
     ::clock_gettime(CLOCK_REALTIME, &ts);
     return ts.tv_sec * 1000000000 + ts.tv_nsec;
