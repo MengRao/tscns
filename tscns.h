@@ -64,6 +64,9 @@ public:
     return ts.tv_sec * 1000000000 + ts.tv_nsec;
   }
 
+  // For checking purposes, see test.cc
+  uint64_t rdoffset() const { return ns_offset; }
+
 private:
   // Linux kernel sync time by finding the first try with tsc diff < 50000
   // We do better: we find the try with the mininum tsc diff

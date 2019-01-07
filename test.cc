@@ -36,6 +36,15 @@ int main(int argc, char** argv) {
     cout << std::setprecision(15) << "tsc_ghz: " << tsc_ghz << endl;
   }
 
+  // 1) Try binding to different cores with the same tsc_ghz at nearly the same time, see if the offsets are similar(not
+  // necessary the same). If not, you're doomed: tsc of your machine's different cores are not synced up, don't share
+  // TSCNS among threads then.
+  //
+  // 2) Try running test with the same tsc_ghz at different times, see if the offsets are similar(not necessary the
+  // same). If you find them steadily go up/down at a fast speed, then your tsc_ghz is not precise enough, try
+  // calibrating with a longer waiting time and test again.
+  cout << "offset: " << tn.rdoffset() << endl;
+
   uint64_t rdns_latency;
   {
     const int N = 10;
