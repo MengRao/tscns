@@ -59,4 +59,11 @@ uint64_t ns = tn.tsc2ns(tsc);
 ```
 
 ## Test
-`test.cc` shows your system's tsc_ghz, TSCNS's latency, clock_gettime's latency and how unstable it could be, and if TSCNS is synced with clock_gettime. Try running it.
+`test.cc` shows:
+1) Your system's tsc_ghz
+2) TSCNS's latency
+3) clock_gettime's latency and how unstable it could be
+4) If your tsc_ghz is precise enough and if ns from TSCNS is synced up with ns from system
+5) If tsc from different cores are synced up
+
+Try running it.
