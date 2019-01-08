@@ -17,13 +17,26 @@ That said, TSCNS needs to find a way to find out those invisible digits: it cali
 
 So initially TSCNS's user need to wait some time before calling `calibrate()` which returns the resultant tsc ghz in a double value, then user can simply feed this frequency to TSCNS for future use without waiting. The long time user waits in the first run the more precise frequency calibration can get, and the returned tsc requency could be saved in a config file on the machine, because it remains valid until hardware or kernel is upgraded when user should calibrate again.
 
+## I don't wanna wait a long time for calibration, can I cheat?
+Yes, do as below:
+```
+$ dmesg | grep "tsc: Refined TSC clocksource calibration"
+[    2.524929] tsc: Refined TSC clocksource calibration: 2194.843 MHz
+$ ./cheat 2194843
+tsc_ghz: 2.1948430943527049
+```
+
+This cheating method should be applicable to both linux-3.X.X and linux-4.X.X versions.
+
+Take a `test` to see if you can get full marks, cheater.
+
 ## Any limitations?
 Yes.
 1) The CPU must have `constant_tsc` feature, which can searched in `/proc/cpuinfo`.
 2) TSCNS doesn't support NTP or other kinds of system time change after it's been initialized, it's always going forward in a steady speed, perhaps it's instead an upside to some users.
 
 ## Usage
-Initialization if tsc_ghz is unknown or not saved previously:
+Initialization if tsc_ghz is unknown and you're honest(don't wanna cheat):
 ```C++
 TSCNS tn;
 
