@@ -32,9 +32,9 @@ int main(int argc, char** argv) {
     int wait_sec = 10; // set a longer time(e.g. more than 1 min) to get more precise tsc_ghz
     cout << "waiting " << wait_sec << " secs for calibration" << endl;
     std::this_thread::sleep_for(std::chrono::seconds(wait_sec));
-    double tsc_ghz = tn.calibrate();
-    cout << std::setprecision(15) << "tsc_ghz: " << tsc_ghz << endl;
+    tsc_ghz = tn.calibrate();
   }
+  cout << std::setprecision(17) << "tsc_ghz: " << tsc_ghz << endl;
 
   // 1) Try binding to different cores with the same tsc_ghz at nearly the same time, see if the offsets are similar(not
   // necessary the same). If not, you're doomed: tsc of your machine's different cores are not synced up, don't share

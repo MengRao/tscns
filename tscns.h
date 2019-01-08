@@ -32,8 +32,9 @@ public:
   // The wait time should be at least 1 second and the longer the more precise tsc_ghz calibrate can get.
   // We suggest that user waits as long as possible(more than 1 min) once, and save the resultant tsc_ghz
   // returned from calibrate() somewhere(e.g. config file) on this machine for future use.
+  // Or you can cheat, see README and cheat.cc for details.
   //
-  // If you have calibrated before on this machine as above, set tsc_ghz and skip calibration.
+  // If you have calibrated/cheated before on this machine as above, set tsc_ghz and skip calibration.
   void init(double tsc_ghz = 0.0) {
     syncTime(base_tsc, base_ns);
     if (tsc_ghz <= 0.0) return;
