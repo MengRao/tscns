@@ -33,7 +33,7 @@ Take a `test` to see if you can get full marks, cheater.
 ## Any limitations?
 Yes.
 1) The CPU must have `constant_tsc` feature, which can searched in `/proc/cpuinfo`.
-2) TSCNS doesn't support NTP or other kinds of system time change after it's been initialized, it's always going forward in a steady speed, perhaps it's instead an upside to some users.
+2) System time changes due to NTP or manual change can not be automatically detect by TSCNS, it's always going forward in a steady speed after init()/calibrate(). But it can be re-inited by user at later times to be re-synced with system clock in a thread safe way, check comments above init() for details.
 
 ## Usage
 Initialization if tsc_ghz is unknown and you're honest(don't wanna cheat):
