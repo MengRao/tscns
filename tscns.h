@@ -35,6 +35,12 @@ public:
   // Or you can cheat, see README and cheat.cc for details.
   //
   // If you have calibrated/cheated before on this machine as above, set tsc_ghz and skip calibration.
+  //
+  // One more thing: you can re-init TSCNS with the same tsc_ghz at later times if you want to re-sync with
+  // system time in case of NTP or manual time changes.
+  // re-init() is thread-safe with rdns(), because rdns() reads 2 member variables: ns_offset and tsc_ghz_inv,
+  // re-init() won't change tsc_ghz_inv's value(although it writes to it anyway), only ns_offset can be changed
+  // in an atomic way, thus thread safe.
   void init(double tsc_ghz = 0.0) {
     syncTime(base_tsc, base_ns);
     if (tsc_ghz <= 0.0) return;
