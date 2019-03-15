@@ -26,7 +26,7 @@ $ ./cheat 2194843
 tsc_ghz: 2.1948430943527049
 ```
 
-This cheating method should be applicable to both linux-3.X.X and linux-4.X.X versions.
+This cheating method should be applicable to both linux-3.X.X and linux-4.X.X versions, but won't work if NTP is used.
 
 Take a `test` to see if you can get full marks, cheater.
 
