@@ -56,8 +56,10 @@ public:
     return 1.0 / tsc_ghz_inv;
   }
 
-  // You can change to using rdtscp if ordering is important
-  uint64_t rdtsc() const { return __builtin_ia32_rdtsc(); }
+  uint64_t rdtsc() const {
+    unsigned int dummy;
+    return __builtin_ia32_rdtscp(&dummy);
+  }
 
   uint64_t tsc2ns(uint64_t tsc) const { return ns_offset + (int64_t)((int64_t)tsc * tsc_ghz_inv); }
 
