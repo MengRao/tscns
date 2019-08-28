@@ -70,12 +70,13 @@ int main(int argc, char** argv) {
 
   uint64_t rdns_latency;
   {
-    const int N = 10;
-    uint64_t nses[N + 1];
-    for (int i = 0; i <= N; i++) {
-      nses[i] = tn.rdns();
+    const int N = 100;
+    uint64_t before = tn.rdns();
+    for (int i = 0; i < N - 1; i++) {
+      tn.rdns();
     }
-    rdns_latency = (nses[N] - nses[0]) / N;
+    uint64_t after = tn.rdns();
+    rdns_latency = (after - before) / N;
   }
   cout << "rdns_latency: " << rdns_latency << endl;
 
