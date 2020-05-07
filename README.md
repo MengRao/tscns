@@ -15,7 +15,7 @@ The most important factor in TSCNS is **tsc frequency** on the system, which it 
 
 That said, TSCNS needs to find a way to find out those invisible digits: it calibrates. Just like how kernel calibrates its tsc clocksource with the help of hpet, TSCNS synchronizes its user space tsc with kernel tsc(it records two pairs of timestamps in different times to calculate the slope), but in a much more accurate manner(If kernel is not accurate, user has to accept; But if TSCNS is not accurate, user could be upset). 
 
-On initialization TNCNS will wait 10 ms to calibrate, and the user can manually calibrate again later to get a more precise tsc ghz. 
+On initialization TNCNS will wait 10 ms to calibrate, and the user can manually calibrate again later to get a more precise tsc frequency. 
 
 ## I don't wanna wait a long time for calibration, can I cheat?
 Yes, do as below:
