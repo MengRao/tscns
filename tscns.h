@@ -28,41 +28,39 @@ SOFTWARE.
 class TSCNS
 {
 public:
-  // If you haven't calibrated tsc_ghz on this machine, set tsc_ghz as 0.0 and wait some time for calibration.
-  // The wait time should be at least 1 second and the longer the more precise tsc_ghz calibrate can get.
-  // We suggest that user waits as long as possible(more than 1 min) once, and save the resultant tsc_ghz
-  // returned from calibrate() somewhere(e.g. config file) on this machine for future use.
-  // Or you can cheat, see README and cheat.cc for details.
+  // If you haven't calibrated tsc_ghz on this machine, set tsc_ghz as 0.0 and it will auto wait 10 ms and calibrate.
+  // Of course you can calibrate again later(e.g. after system init is done) and the longer you wait the more precise
+  // tsc_ghz calibrate can get. It's a good idea that user waits as long as possible(more than 1 min) once, and save the
+  // resultant tsc_ghz returned from calibrate() somewhere(e.g. config file) on this machine for future use. Or you can
+  // cheat, see README and cheat.cc for details.
   //
   // If you have calibrated/cheated before on this machine as above, set tsc_ghz and skip calibration.
   //
-  // One more thing: you can re-init TSCNS with the same tsc_ghz at later times if you want to re-sync with
+  // One more thing: you can re-init and calibrate TSCNS at later times if you want to re-sync with
   // system time in case of NTP or manual time changes.
-  // re-init() is thread-safe with rdns(), because rdns() reads 2 member variables: ns_offset and tsc_ghz_inv,
-  // re-init() won't change tsc_ghz_inv's value(although it writes to it anyway), only ns_offset can be changed
-  // in an atomic way, thus thread safe.
-  void init(double tsc_ghz = 0.0) {
+  double init(double tsc_ghz = 0.0) {
     syncTime(base_tsc, base_ns);
-    if (tsc_ghz <= 0.0) return;
-    tsc_ghz_inv = 1.0 / tsc_ghz;
-    adjustOffset();
+    if (tsc_ghz > 0) {
+      tsc_ghz_inv = 1.0 / tsc_ghz;
+      adjustOffset();
+      return tsc_ghz;
+    }
+    else {
+      return calibrate();
+    }
   }
 
-  double calibrate() {
+  double calibrate(uint64_t min_wait_ns = 10000000) {
     uint64_t delayed_tsc, delayed_ns;
-    syncTime(delayed_tsc, delayed_ns);
+    do {
+      syncTime(delayed_tsc, delayed_ns);
+    } while ((delayed_ns - base_ns) < min_wait_ns);
     tsc_ghz_inv = (double)(int64_t)(delayed_ns - base_ns) / (int64_t)(delayed_tsc - base_tsc);
     adjustOffset();
     return 1.0 / tsc_ghz_inv;
   }
 
-  uint64_t rdtsc() const {
-    unsigned int dummy;
-    return __builtin_ia32_rdtscp(&dummy);
-  }
-
-  // use below implementation if rdtscp is not supported by cpu
-  // uint64_t rdtsc() const { return __builtin_ia32_rdtsc(); }
+  static uint64_t rdtsc() { return __builtin_ia32_rdtsc(); }
 
   uint64_t tsc2ns(uint64_t tsc) const { return ns_offset + (int64_t)((int64_t)tsc * tsc_ghz_inv); }
 
@@ -70,7 +68,7 @@ public:
 
   // If you want cross-platform, use std::chrono as below which incurs one more function call:
   // return std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  uint64_t rdsysns() const {
+  static uint64_t rdsysns() {
     timespec ts;
     ::clock_gettime(CLOCK_REALTIME, &ts);
     return ts.tv_sec * 1000000000 + ts.tv_nsec;
