@@ -4,7 +4,7 @@ Although current Linux systems are using VDSO for implementing clock_gettime/get
 All of these are not good for recording nanosecond timestamps in time-critical tasks where latency of getting timestamp itself should be minimized, nor for benchmarking a general program where stable and reliable timestamp latency is expected.
 
 ## How is TSCNS better?
-TSCNS uses rdtsc instruction and simple arithmatic operations to get the same nanosecond timestamp provided by clock_gettime, it's much faster and stable in terms of latency: around 10 ns! Actually the whole work is in just 8 consecutive CPU instructions without a function call on current X86-64 architecture.
+TSCNS uses rdtsc instruction and simple arithmatic operations to get the same nanosecond timestamp provided by clock_gettime, it's much faster and stable in terms of latency: in less than 10 ns. Actually the whole work is in just 8 consecutive CPU instructions without a function call on current X86-64 architecture.
 
 TSCNS is also thread safe in the most simple and efficient way: it's read-only after initialization, so different threads can keep TSCNS's member variable in the cache for as long as they can.
 
@@ -15,7 +15,7 @@ The most important factor in TSCNS is **tsc frequency** on the system, which it 
 
 That said, TSCNS needs to find a way to find out those invisible digits: it calibrates. Just like how kernel calibrates its tsc clocksource with the help of hpet, TSCNS synchronizes its user space tsc with kernel tsc(it records two pairs of timestamps in different times to calculate the slope), but in a much more accurate manner(If kernel is not accurate, user has to accept; But if TSCNS is not accurate, user could be upset). 
 
-So initially TSCNS's user need to wait some time before calling `calibrate()` which returns the resultant tsc ghz in a double value, then user can simply feed this frequency to TSCNS for future use without waiting. The long time user waits in the first run the more precise frequency calibration can get, and the returned tsc requency could be saved in a config file on the machine, because it remains valid until hardware or kernel is upgraded when user should calibrate again.
+On initialization TNCNS will wait 10 ms to calibrate, and the user can manually calibrate again later to get a more precise tsc frequency. 
 
 ## I don't wanna wait a long time for calibration, can I cheat?
 Yes, do as below:
@@ -36,19 +36,18 @@ Yes.
 2) NTP/manual time change can not automatically be detected by TSCNS, it's always going forward in a steady speed after init()/calibrate(). But it can be re-inited by user at later times to be re-synced with system clock in a thread safe way, check comments above init() for details.
 
 ## Usage
-Initialization if tsc_ghz is unknown and you're honest(don't wanna cheat):
+Initialization in normal case:
 ```C++
 TSCNS tn;
 
 tn.init();
-// sleep for some time or do other initialization work...
-std::this_thread::sleep_for(std::chrono::seconds(1));
-double tsc_ghz = tn.calibrate();
-// now we can save tsc_ghz for future initialization
+// it's recommended to calibrate again a while later:
+// std::this_thread::sleep_for(std::chrono::seconds(1));
+// tn.calibrate();
 
 ```
 
-Initialization if tsc_ghz is known:
+Initialization if kernal tsc frequecy could be read and converted by the cheat program mentioned above, and system will not sync time by NTP:
 ```C++
 TSCNS tn;
 
