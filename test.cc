@@ -75,7 +75,10 @@ int main(int argc, char** argv) {
     uint64_t rdsysns_latency = c - a - rdns_latency;
     cout << "a: " << a << ", b: " << b << ", c: " << c << ", a2b: " << a2b << ", b2c: " << b2c << ", good: " << good
          << ", rdsysns_latency: " << rdsysns_latency << endl;
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    // std::this_thread::sleep_for(std::chrono::miliseconds(1000));
+    auto expire = tn.rdns() + 1000000000;
+    while (tn.rdns() < expire)
+      ;
   }
 
   return 0;
