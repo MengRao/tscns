@@ -26,7 +26,7 @@ $ ./cheat 2194843
 tsc_ghz: 2.1948430943527049
 ```
 
-This cheating method should be applicable to both linux-3.X.X and linux-4.X.X versions, but won't work if NTP is used.
+This cheating method should be applicable to both linux-3.X.X and linux-4.X.X versions, but won't work if `ntpd` is used as it'll discipline the host clock frequency, however `ntpdate` won't adjust host clock frequency so it won't affect this cheating method.
 
 Take a `test` to see if you can get full marks, cheater.
 
@@ -47,7 +47,7 @@ tn.init();
 
 ```
 
-Initialization if kernal tsc frequecy could be read and converted by the cheat program mentioned above, and system will not sync time by NTP:
+Initialization if kernal tsc frequecy could be read and converted by the cheat program mentioned above, and `ntpd` is not used(`ntpdate` is ok to use):
 ```C++
 TSCNS tn;
 
