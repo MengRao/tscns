@@ -26,7 +26,7 @@ $ ./cheat 2194843
 tsc_ghz: 2.1948430943527049
 ```
 
-This cheating method should be applicable to both linux-3.X.X and linux-4.X.X versions, but won't work if `ntpd` is used as it'll discipline the host clock frequency, however `ntpdate` won't adjust host clock frequency so it won't affect this cheating method.
+This cheating method should be applicable to both linux-3.X.X and linux-4.X.X versions, but won't work if `ntpd` is used as it'll discipline the host clock frequency, however `ntpdate` won't adjust host clock frequency so it's ok to use. Also note that you need to re-calculate tsc_ghz every time system is rebooted, better put it in system boot script.
 
 Take a `test` to see if you can get full marks, cheater.
 
