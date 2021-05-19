@@ -50,40 +50,40 @@ public:
     }
   }
 
-  double calibrate(uint64_t min_wait_ns = 10000000) {
-    uint64_t delayed_tsc, delayed_ns;
+  double calibrate(int64_t min_wait_ns = 10000000) {
+    int64_t delayed_tsc, delayed_ns;
     do {
       syncTime(delayed_tsc, delayed_ns);
     } while ((delayed_ns - base_ns) < min_wait_ns);
-    tsc_ghz_inv = (double)(int64_t)(delayed_ns - base_ns) / (int64_t)(delayed_tsc - base_tsc);
+    tsc_ghz_inv = (double)(delayed_ns - base_ns) / (delayed_tsc - base_tsc);
     adjustOffset();
     return 1.0 / tsc_ghz_inv;
   }
 
-  static uint64_t rdtsc() { return __builtin_ia32_rdtsc(); }
+  static int64_t rdtsc() { return __builtin_ia32_rdtsc(); }
 
-  uint64_t tsc2ns(uint64_t tsc) const { return ns_offset + (int64_t)((int64_t)tsc * tsc_ghz_inv); }
+  int64_t tsc2ns(int64_t tsc) const { return ns_offset + (int64_t)(tsc * tsc_ghz_inv); }
 
-  uint64_t rdns() const { return tsc2ns(rdtsc()); }
+  int64_t rdns() const { return tsc2ns(rdtsc()); }
 
   // If you want cross-platform, use std::chrono as below which incurs one more function call:
   // return std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  static uint64_t rdsysns() {
+  static int64_t rdsysns() {
     timespec ts;
     ::clock_gettime(CLOCK_REALTIME, &ts);
     return ts.tv_sec * 1000000000 + ts.tv_nsec;
   }
 
   // For checking purposes, see test.cc
-  uint64_t rdoffset() const { return ns_offset; }
+  int64_t rdoffset() const { return ns_offset; }
 
 private:
   // Linux kernel sync time by finding the first try with tsc diff < 50000
   // We do better: we find the try with the mininum tsc diff
-  void syncTime(uint64_t& tsc, uint64_t& ns) {
+  void syncTime(int64_t& tsc, int64_t& ns) {
     const int N = 10;
-    uint64_t tscs[N + 1];
-    uint64_t nses[N + 1];
+    int64_t tscs[N + 1];
+    int64_t nses[N + 1];
 
     tscs[0] = rdtsc();
     for (int i = 1; i <= N; i++) {
@@ -99,10 +99,10 @@ private:
     ns = nses[best];
   }
 
-  void adjustOffset() { ns_offset = base_ns - (int64_t)((int64_t)base_tsc * tsc_ghz_inv); }
+  void adjustOffset() { ns_offset = base_ns - (int64_t)(base_tsc * tsc_ghz_inv); }
 
   alignas(64) double tsc_ghz_inv = 1.0; // make sure tsc_ghz_inv and ns_offset are on the same cache line
-  uint64_t ns_offset = 0;
-  uint64_t base_tsc = 0;
-  uint64_t base_ns = 0;
+  int64_t ns_offset = 0;
+  int64_t base_tsc = 0;
+  int64_t base_ns = 0;
 };

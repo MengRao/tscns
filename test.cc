@@ -52,27 +52,27 @@ int main(int argc, char** argv) {
   // calibrating with a longer waiting time and test again.
   cout << "offset: " << tn.rdoffset() << endl;
 
-  uint64_t rdns_latency;
+  int64_t rdns_latency;
   {
     const int N = 100;
-    uint64_t before = tn.rdns();
-    uint64_t tmp = 0;
+    int64_t before = tn.rdns();
+    int64_t tmp = 0;
     for (int i = 0; i < N - 1; i++) {
       tmp += tn.rdns();
     }
-    uint64_t after = tn.rdns();
+    int64_t after = tn.rdns();
     rdns_latency = (after - before) / N;
     cout << "rdns_latency: " << rdns_latency << " tmp: " << tmp << endl;
   }
 
   while (true) {
-    uint64_t a = tn.rdns();
-    uint64_t b = tn.rdsysns();
-    uint64_t c = tn.rdns();
+    int64_t a = tn.rdns();
+    int64_t b = tn.rdsysns();
+    int64_t c = tn.rdns();
     int64_t a2b = b - a;
     int64_t b2c = c - b;
     bool good = a2b >= 0 && b2c >= 0;
-    uint64_t rdsysns_latency = c - a - rdns_latency;
+    int64_t rdsysns_latency = c - a - rdns_latency;
     cout << "a: " << a << ", b: " << b << ", c: " << c << ", a2b: " << a2b << ", b2c: " << b2c << ", good: " << good
          << ", rdsysns_latency: " << rdsysns_latency << endl;
     // std::this_thread::sleep_for(std::chrono::miliseconds(1000));
