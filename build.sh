@@ -1,2 +1,2 @@
-g++ -O3 test.cc -o test
-g++ -O3 cheat.cc -o cheat
+g++ -Ofast -march=native test.cc -o test
+g++ -Ofast -march=native cheat.cc -o cheat

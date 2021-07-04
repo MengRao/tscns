@@ -21,7 +21,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-#include <bits/stdc++.h>
+#include <iostream>
+#include <iomanip>
+#include <chrono>
+#include <thread>
 #include "tscns.h"
 
 using namespace std;
@@ -37,8 +40,8 @@ int main(int argc, char** argv) {
   else {
     tsc_ghz = tn.init();
     // it'll be more precise if you wait a while and calibrate
-    // std::this_thread::sleep_for(std::chrono::seconds(1));
-    // tsc_ghz = tn.calibrate();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    tsc_ghz = tn.calibrate();
   }
 
   cout << std::setprecision(17) << "tsc_ghz: " << tsc_ghz << endl;
