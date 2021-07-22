@@ -77,7 +77,6 @@ public:
   // For checking purposes, see test.cc
   int64_t rdoffset() const { return ns_offset; }
 
-private:
   // Linux kernel sync time by finding the first try with tsc diff < 50000
   // We do better: we find the try with the mininum tsc diff
   void syncTime(int64_t& tsc, int64_t& ns) {
