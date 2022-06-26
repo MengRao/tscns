@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2019 Meng Rao <raomeng1@gmail.com>
+Copyright (c) 2022 Meng Rao <raomeng1@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,85 +23,126 @@ SOFTWARE.
 */
 
 #pragma once
-#include <time.h>
+#include <chrono>
+#include <atomic>
+
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 
 class TSCNS
 {
 public:
-  // If you haven't calibrated tsc_ghz on this machine, set tsc_ghz as 0.0 and it will auto wait 10 ms and calibrate.
-  // Of course you can calibrate again later(e.g. after system init is done) and the longer you wait the more precise
-  // tsc_ghz calibrate can get. It's a good idea that user waits as long as possible(more than 1 min) once, and save the
-  // resultant tsc_ghz returned from calibrate() somewhere(e.g. config file) on this machine for future use. Or you can
-  // cheat, see README and cheat.cc for details.
-  //
-  // If you have calibrated/cheated before on this machine as above, set tsc_ghz and skip calibration.
-  //
-  // One more thing: you can re-init and calibrate TSCNS at later times if you want to re-sync with
-  // system time in case of NTP or manual time changes.
-  double init(double tsc_ghz = 0.0) {
+  static const int64_t NsPerSec = 1000000000;
+
+  void init(int64_t init_calibrate_ns = 20000000, int64_t calibrate_interval_ns_ = 3 * NsPerSec) {
+    calibate_interval_ns = calibrate_interval_ns_;
+    int64_t base_tsc, base_ns;
     syncTime(base_tsc, base_ns);
-    if (tsc_ghz > 0) {
-      tsc_ghz_inv = 1.0 / tsc_ghz;
-      adjustOffset();
-      return tsc_ghz;
-    }
-    else {
-      return calibrate();
-    }
-  }
-
-  double calibrate(int64_t min_wait_ns = 10000000) {
+    int64_t expire_ns = base_ns + init_calibrate_ns;
+    while (rdsysns() < expire_ns) std::this_thread::yield();
     int64_t delayed_tsc, delayed_ns;
-    do {
-      syncTime(delayed_tsc, delayed_ns);
-    } while ((delayed_ns - base_ns) < min_wait_ns);
-    tsc_ghz_inv = (double)(delayed_ns - base_ns) / (delayed_tsc - base_tsc);
-    adjustOffset();
-    return 1.0 / tsc_ghz_inv;
+    syncTime(delayed_tsc, delayed_ns);
+    double init_ns_per_tsc = (double)(delayed_ns - base_ns) / (delayed_tsc - base_tsc);
+    saveParam(base_tsc, base_ns, base_ns, init_ns_per_tsc);
   }
 
-  static int64_t rdtsc() { return __builtin_ia32_rdtsc(); }
-
-  int64_t tsc2ns(int64_t tsc) const { return ns_offset + (int64_t)(tsc * tsc_ghz_inv); }
-
-  int64_t rdns() const { return tsc2ns(rdtsc()); }
-
-  // If you want cross-platform, use std::chrono as below which incurs one more function call:
-  // return std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  static int64_t rdsysns() {
-    timespec ts;
-    ::clock_gettime(CLOCK_REALTIME, &ts);
-    return ts.tv_sec * 1000000000 + ts.tv_nsec;
+  void calibrate() {
+    if (rdtsc() < next_calibrate_tsc) return;
+    int64_t tsc, ns;
+    syncTime(tsc, ns);
+    int64_t calulated_ns = tsc2ns(tsc);
+    double ns_err = calulated_ns - ns;
+    double expected_err_at_next_calibration =
+      ns_err + (ns_err - last_ns_err) / (ns - last_ns) * calibate_interval_ns;
+    double new_ns_per_tsc =
+      ns_per_tsc * (1.0 - expected_err_at_next_calibration / calibate_interval_ns);
+    saveParam(tsc, calulated_ns, ns, new_ns_per_tsc);
   }
 
-  // For checking purposes, see test.cc
-  int64_t rdoffset() const { return ns_offset; }
+  static inline int64_t rdtsc() {
+#ifdef _MSC_VER
+    return __rdtsc();
+#elif defined(__i386__) || defined(__x86_64__) || defined(__amd64__)
+    return __builtin_ia32_rdtsc();
+#else
+    return rdsysns();
+#endif
+  }
 
-  // Linux kernel sync time by finding the first try with tsc diff < 50000
-  // We do better: we find the try with the mininum tsc diff
-  void syncTime(int64_t& tsc, int64_t& ns) {
-    const int N = 10;
-    int64_t tscs[N + 1];
-    int64_t nses[N + 1];
-
-    tscs[0] = rdtsc();
-    for (int i = 1; i <= N; i++) {
-      nses[i] = rdsysns();
-      tscs[i] = rdtsc();
+  inline int64_t tsc2ns(int64_t tsc) const {
+    while (true) {
+      uint32_t before_seq = param_seq.load(std::memory_order_acquire) & ~1;
+      int64_t ns = ns_offset + (int64_t)(tsc * ns_per_tsc);
+      uint32_t after_seq = param_seq.load(std::memory_order_acquire);
+      if (before_seq == after_seq) return ns;
     }
+  }
+
+  inline int64_t rdns() const { return tsc2ns(rdtsc()); }
+
+  static inline int64_t rdsysns() {
+    using namespace std::chrono;
+    return duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  }
+
+  double getTscGhz() const { return 1.0 / ns_per_tsc; }
+
+  // Linux kernel sync time by finding the first trial with tsc diff < 50000
+  // We try several times and return the one with the mininum tsc diff.
+  // Note that MSVC has a 100ns resolution clock, so we need to combine those ns with the same
+  // value, and drop the first and the last value as they may not scan a full 100ns range
+  static void syncTime(int64_t& tsc_out, int64_t& ns_out) {
+#ifdef _MSC_VER
+    const int N = 15;
+#else
+    const int N = 3;
+#endif
+    int64_t tsc[N + 1];
+    int64_t ns[N + 1];
+
+    tsc[0] = rdtsc();
+    for (int i = 1; i <= N; i++) {
+      ns[i] = rdsysns();
+      tsc[i] = rdtsc();
+    }
+
+#ifdef _MSC_VER
+    int j = 1;
+    for (int i = 2; i <= N; i++) {
+      if (ns[i] == ns[i - 1]) continue;
+      tsc[j - 1] = tsc[i - 1];
+      ns[j++] = ns[i];
+    }
+    j--;
+#else
+    int j = N + 1;
+#endif
 
     int best = 1;
-    for (int i = 2; i <= N; i++) {
-      if (tscs[i] - tscs[i - 1] < tscs[best] - tscs[best - 1]) best = i;
+    for (int i = 2; i < j; i++) {
+      if (tsc[i] - tsc[i - 1] < tsc[best] - tsc[best - 1]) best = i;
     }
-    tsc = (tscs[best] + tscs[best - 1]) >> 1;
-    ns = nses[best];
+    tsc_out = (tsc[best] + tsc[best - 1]) >> 1;
+    ns_out = ns[best];
   }
 
-  void adjustOffset() { ns_offset = base_ns - (int64_t)(base_tsc * tsc_ghz_inv); }
+  void saveParam(int64_t base_tsc, int64_t base_ns, int64_t sys_ns, double new_ns_per_tsc) {
+    last_ns = sys_ns;
+    last_ns_err = base_ns - sys_ns;
+    next_calibrate_tsc = base_tsc + (int64_t)(calibate_interval_ns / new_ns_per_tsc);
+    uint32_t seq = param_seq.load(std::memory_order_relaxed);
+    param_seq.store(++seq, std::memory_order_release);
+    ns_per_tsc = new_ns_per_tsc;
+    ns_offset = base_ns - (int64_t)(base_tsc * ns_per_tsc);
+    param_seq.store(++seq, std::memory_order_release);
+  }
 
-  alignas(64) double tsc_ghz_inv = 1.0; // make sure tsc_ghz_inv and ns_offset are on the same cache line
+  alignas(64) std::atomic<uint32_t> param_seq = 0;
+  double ns_per_tsc = 1.0;
   int64_t ns_offset = 0;
-  int64_t base_tsc = 0;
-  int64_t base_ns = 0;
+  int64_t calibate_interval_ns;
+  int64_t last_ns;
+  double last_ns_err;
+  int64_t next_calibrate_tsc;
 };
