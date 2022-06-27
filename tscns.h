@@ -25,6 +25,7 @@ SOFTWARE.
 #pragma once
 #include <chrono>
 #include <atomic>
+#include <thread>
 
 #ifdef _MSC_VER
 #include <intrin.h>
