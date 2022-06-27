@@ -40,4 +40,12 @@ while(running) {
 ```
 
 ## More about calibration
-todo
+Actually the init function has two optional parameters: `void init(int64_t init_calibrate_ns, int64_t calibrate_interval_ns)`: the initial calibration wait time and afterwards calibration interval. The initial calibration is used to find a proper tsc frequency to start with, and it's blocking in `tscns.init()`, so the default wait time is set to a small value: 20 ms. User can choose to wait a longer time for a more precise initial calibration, e.g. 1 second.
+
+`calibrate_interval_ns` sets the minimum calibration interval to keep tscns synced with system clock, the default value is 3 seconds. Also user need to call `calibrate()` function to trigger calibration in an interval no larger than `calibrate_interval_ns`. The `calibrate()` function is non-blocking and cheap to call but not thread-safe, so user should have only one thread calling it. The calibrations will adjust tsc frequency in the library to trace that of the system clock and keep timestamp divergence in a minimum level. During calibration, `rdns()` results in other threads is guaranteed to be continuous: there won't be jump in values and especially timestamp won't go backwards. Below picture shows how these routine calibrations suppress timestamp error caused by the initial coarse calibration and system clock speed correction. Also user can choose not to calibrate after initialization: just don't call the `calibrate()` function and tscns will always go with the initial tsc frequency.
+
+![tscns](https://user-images.githubusercontent.com/11496526/175851336-b92dc8f2-ef6b-4c03-80ec-b7c4e36b2784.png)
+
+## Differences with TSCNS 1.0
+* TSCNS 2.0 supports routine calibrations in addition to only initial calibration in 1.0, so time drifting awaying from system clock can be radically eliminated. Also tsc_ghz can't be set by the user any more and the cheat method in 1.0 are also obsolete. In 2.0, `tsc2ns()` added a sequence lock to protect from parameters change caused by calibrations, the added performance cost is less than 0.5 ns.
+* Windows is supported now. We believe Windows applications will benefit much more from TSCNS because of the drawbacks of the system clock we mentioned at the beginning.
