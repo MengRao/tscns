@@ -12,29 +12,29 @@ Also it can be closely synchronized with the system clock, which makes it a good
 ## Usage
 Initialization:
 ```C++
-TSCNS tn;
+TSCNS tscns;
 
-tn.init();
+tscns.init();
 ```
 
 Getting nanosecond timestamp in a single step:
 ```C++
-int64_t ns = tn.rdns();
+int64_t ns = tscns.rdns();
 ```
 
 Or just recording a tsc in some time-critical tasks and converting it to ns in jobs that can be delayed:
 ```C++
 // in time-critical task
-int64_t tsc = tn.rdtsc();
+int64_t tsc = tscns.rdtsc();
 ...
 // in logging task
-int64_t ns = tn.tsc2ns(tsc);
+int64_t ns = tscns.tsc2ns(tsc);
 ```
 
 Calibration with some interval in the background:
 ```C++
 while(running) {
-  tn.calibrate();
+  tscns.calibrate();
   std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 ```
