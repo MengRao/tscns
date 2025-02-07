@@ -31,6 +31,21 @@ using namespace std;
 
 TSCNS tn;
 
+string ptime(int64_t ts) {
+  if (ts == 0) return "null";
+  struct tm* dt;
+  string ret(18, '0');
+  time_t sec = ts / 1000000000;
+  int ns = ts % 1000000000;
+  dt = localtime(&sec);
+  strftime(ret.data(), 18, "%H:%M:%S.", dt);
+  for (int i = 17; i >= 9; i--) {
+    ret[i] = '0' + (ns % 10);
+    ns /= 10;
+  }
+  return ret;
+}
+
 int main(int argc, char** argv) {
   tn.init();
   cout << std::setprecision(15) << "init tsc_ghz: " << tn.getTscGhz() << endl;
@@ -66,6 +81,7 @@ int main(int argc, char** argv) {
     int64_t b = tn.rdns();
     int64_t c = tn.rdsysns();
     int64_t d = tn.rdns();
+    int64_t tsc = tn.rdtsc();
     int64_t b2c = c - b;
     int64_t c2d = d - c;
     int64_t err = 0;
@@ -78,7 +94,8 @@ int main(int argc, char** argv) {
     int64_t rdsysns_latency = d - b - (int64_t)rdns_latency;
     cout << "calibrate_latency: " << calibrate_latency << ", tsc_ghz: " << tn.getTscGhz()
          << ", b2c: " << b2c << ", c2d: " << c2d << ", err: " << err
-         << ", rdsysns_latency: " << rdsysns_latency << endl;
+         << ", rdsysns_latency: " << rdsysns_latency << ", tsc: " << tsc << ", now: " << ptime(c)
+         << endl;
     auto expire = tn.rdns() + tn.NsPerSec / 2;
     while (tn.rdns() < expire) std::this_thread::yield();
   }
