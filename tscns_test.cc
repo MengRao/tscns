@@ -94,8 +94,9 @@ int main(int argc, char** argv) {
     int64_t rdsysns_latency = d - b - (int64_t)rdns_latency;
     cout << "calibrate_latency: " << calibrate_latency << ", tsc_ghz: " << tn.getTscGhz()
          << ", b2c: " << b2c << ", c2d: " << c2d << ", err: " << err
-         << ", rdsysns_latency: " << rdsysns_latency << ", tsc: " << tsc << ", now: " << ptime(c)
-         << endl;
+         << ", rdsysns_latency: " << rdsysns_latency << ", tsc: " << tsc
+         << ", ns_per_tsc_: " << tn.ns_per_tsc_ << ", base_ns_err_: " << tn.base_ns_err_
+         << ", now: " << ptime(c) << endl;
     auto expire = tn.rdns() + tn.NsPerSec / 2;
     while (tn.rdns() < expire) std::this_thread::yield();
   }
